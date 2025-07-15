@@ -1,0 +1,273 @@
+-- RoseHub by ConquestX
+local UILib = {}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BlackRedUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local function createGradient(obj)
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 20, 20))
+	}
+	gradient.Rotation = 90
+	gradient.Parent = obj
+end
+
+local function createBaseFrame(name)
+	local frame = Instance.new("Frame")
+	frame.Name = name
+	frame.Size = UDim2.new(0, 300, 0, 40)
+	frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	frame.BorderSizePixel = 0
+	createGradient(frame)
+
+	local uicorner = Instance.new("UICorner", frame)
+	uicorner.CornerRadius = UDim.new(0, 8)
+
+	return frame
+end
+
+local function createLabel(text)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	return label
+end
+
+function UILib:CreateWindow(title)
+	local main = Instance.new("Frame")
+	main.Size = UDim2.new(0, 320, 0, 500)
+	main.Position = UDim2.new(0.5, -160, 0.5, -250)
+	main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+	main.BorderSizePixel = 0
+	main.Name = "MainWindow"
+	main.Parent = ScreenGui
+	createGradient(main)
+
+	local uicorner = Instance.new("UICorner", main)
+	uicorner.CornerRadius = UDim.new(0, 10)
+
+	local uilist = Instance.new("UIListLayout", main)
+	uilist.Padding = UDim.new(0, 10)
+	uilist.SortOrder = Enum.SortOrder.LayoutOrder
+
+	local titleBar = createBaseFrame("Title")
+	titleBar.Size = UDim2.new(1, -20, 0, 50)
+	titleBar.Position = UDim2.new(0, 10, 0, 10)
+	titleBar.Parent = main
+
+	local titleLabel = createLabel(title)
+	titleLabel.Parent = titleBar
+
+	local container = main
+
+	local elements = {}
+
+	function elements:Button(text, callback)
+		local button = createBaseFrame("Button")
+		button.Size = UDim2.new(1, -20, 0, 40)
+		button.Parent = container
+
+		local label = createLabel(text)
+		label.Parent = button
+
+		button.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				pcall(callback)
+			end
+		end)
+	end
+
+	function elements:Toggle(text, default, callback)
+		local toggle = createBaseFrame("Toggle")
+		toggle.Size = UDim2.new(1, -20, 0, 40)
+		toggle.Parent = container
+
+		local label = createLabel(text)
+		label.Parent = toggle
+
+		local state = default
+
+		toggle.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				state = not state
+				pcall(callback, state)
+				label.Text = text .. " [" .. (state and "ON" or "OFF") .. "]"
+			end
+		end)
+	end
+
+	function elements:Dropdown(title, options, callback)
+		local dropdown = createBaseFrame("Dropdown")
+		dropdown.Size = UDim2.new(1, -20, 0, 40)
+		dropdown.Parent = container
+
+		local selected = options[1]
+		local label = createLabel(title .. ": " .. selected)
+		label.Parent = dropdown
+
+		dropdown.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				local menu = Instance.new("Frame")
+				menu.Size = UDim2.new(1, -20, 0, #options * 35)
+				menu.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+				menu.BorderSizePixel = 0
+				createGradient(menu)
+				menu.Position = UDim2.new(0, 10, 0, dropdown.AbsolutePosition.Y + 45)
+				menu.Parent = ScreenGui
+
+				local layout = Instance.new("UIListLayout", menu)
+				layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+				for _, opt in ipairs(options) do
+					local btn = Instance.new("TextButton")
+					btn.Size = UDim2.new(1, 0, 0, 35)
+					btn.Text = opt
+					btn.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+					btn.TextColor3 = Color3.new(1, 1, 1)
+					btn.Font = Enum.Font.Gotham
+					btn.TextScaled = true
+					btn.Parent = menu
+
+					btn.MouseButton1Click:Connect(function()
+						selected = opt
+						label.Text = title .. ": " .. selected
+						pcall(callback, selected)
+						menu:Destroy()
+					end)
+				end
+			end
+		end)
+	end
+
+	function elements:MultiDropdown(title, options, callback)
+		local multi = createBaseFrame("MultiDropdown")
+		multi.Size = UDim2.new(1, -20, 0, 40)
+		multi.Parent = container
+
+		local label = createLabel(title .. ": [None]")
+		label.Parent = multi
+
+		local selected = {}
+
+		multi.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				local menu = Instance.new("Frame")
+				menu.Size = UDim2.new(1, -20, 0, #options * 35)
+				menu.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+				menu.BorderSizePixel = 0
+				createGradient(menu)
+				menu.Position = UDim2.new(0, 10, 0, multi.AbsolutePosition.Y + 45)
+				menu.Parent = ScreenGui
+
+				local layout = Instance.new("UIListLayout", menu)
+				layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+				for _, opt in ipairs(options) do
+					local btn = Instance.new("TextButton")
+					btn.Size = UDim2.new(1, 0, 0, 35)
+					btn.Text = opt
+					btn.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+					btn.TextColor3 = Color3.new(1, 1, 1)
+					btn.Font = Enum.Font.Gotham
+					btn.TextScaled = true
+					btn.Parent = menu
+
+					btn.MouseButton1Click:Connect(function()
+						if table.find(selected, opt) then
+							table.remove(selected, table.find(selected, opt))
+						else
+							table.insert(selected, opt)
+						end
+						label.Text = title .. ": [" .. table.concat(selected, ", ") .. "]"
+						pcall(callback, selected)
+					end)
+				end
+			end
+		end)
+	end
+
+	function elements:Textbox(title, callback)
+		local frame = createBaseFrame("Textbox")
+		frame.Size = UDim2.new(1, -20, 0, 40)
+		frame.Parent = container
+
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(1, 0, 1, 0)
+		box.PlaceholderText = title
+		box.TextColor3 = Color3.new(1, 1, 1)
+		box.Font = Enum.Font.Gotham
+		box.TextScaled = true
+		box.BackgroundTransparency = 1
+		box.ClearTextOnFocus = false
+		box.Parent = frame
+
+		box.FocusLost:Connect(function(enter)
+			if enter then
+				pcall(callback, box.Text)
+			end
+		end)
+	end
+
+	function elements:Slider(title, min, max, default, callback)
+		local frame = createBaseFrame("Slider")
+		frame.Size = UDim2.new(1, -20, 0, 60)
+		frame.Parent = container
+
+		local label = createLabel(title .. ": " .. tostring(default))
+		label.Size = UDim2.new(1, 0, 0.5, 0)
+		label.Parent = frame
+
+		local slider = Instance.new("TextButton")
+		slider.Size = UDim2.new(1, -20, 0, 20)
+		slider.Position = UDim2.new(0, 10, 0.5, 5)
+		slider.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+		slider.Text = ""
+		slider.AutoButtonColor = false
+		slider.Parent = frame
+
+		local fill = Instance.new("Frame")
+		fill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+		fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+		fill.BorderSizePixel = 0
+		fill.Parent = slider
+
+		local dragging = false
+		slider.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+			end
+		end)
+
+		game:GetService("UserInputService").InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+
+		game:GetService("RunService").RenderStepped:Connect(function()
+			if dragging then
+				local mouse = game:GetService("UserInputService"):GetMouseLocation()
+				local absPos = slider.AbsolutePosition.X
+				local absSize = slider.AbsoluteSize.X
+				local val = math.clamp((mouse.X - absPos) / absSize, 0, 1)
+				fill.Size = UDim2.new(val, 0, 1, 0)
+				local result = math.floor(min + (max - min) * val)
+				label.Text = title .. ": " .. tostring(result)
+				pcall(callback, result)
+			end
+		end)
+	end
+
+	return elements
+end
+
+return UILib
